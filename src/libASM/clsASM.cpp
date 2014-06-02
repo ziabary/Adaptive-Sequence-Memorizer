@@ -25,10 +25,9 @@
 #include "clsASM.h"
 #include "Private/clsASM_p.h"
 
-stuConfigs gConfigs;
 /*************************************************************************************************************/
-clsASM::clsASM() :
-    pPrivate(new clsASMPrivate)
+clsASM::clsASM(clsASM::stuConfigs _configs):
+    pPrivate(new clsASMPrivate(_configs))
 {
 }
 
@@ -39,11 +38,13 @@ const std::unordered_set<ColID_t>& clsASM::executeOnce(ColID_t _input, bool _isL
 }
 
 /*************************************************************************************************************/
-clsASMPrivate::clsASMPrivate()
+clsASMPrivate::clsASMPrivate(clsASM::stuConfigs _configs)
 {
     this->LastLearningCell = NULL;
+    this->Configs = _configs;
 }
 
+/*************************************************************************************************************/
 void clsASMPrivate::executeOnce(ColID_t _activeColIndex, bool _isLearning)
 {
     this->PredictedCols.clear();
@@ -96,7 +97,7 @@ void clsASMPrivate::executeOnce(ColID_t _activeColIndex, bool _isLearning)
             //Learn new prediction
             clsCell* NewCell = new clsCell(_activeColIndex);
             NewCell->connection().Destination = LastLearningCell;
-            NewCell->connection().Permanence = gConfigs.InitialConnectionPermanence;
+            NewCell->connection().Permanence = this->Configs.InitialConnectionPermanence;
             this->Cells[_activeColIndex - 1]->push_back(NewCell);
         }
         this->removeOldPredictions();
@@ -109,19 +110,19 @@ void clsASMPrivate::executeOnce(ColID_t _activeColIndex, bool _isLearning)
         {
             //reinforce correct prediction
             PredictiveCell->connection().Permanence = (
-                        SHRT_MAX - PredictiveCell->connection().Permanence < gConfigs.PermanenceIncVal ?
+                        SHRT_MAX - PredictiveCell->connection().Permanence < this->Configs.PermanenceIncVal ?
                             SHRT_MAX :
-                            PredictiveCell->connection().Permanence + gConfigs.PermanenceIncVal);
+                            PredictiveCell->connection().Permanence + this->Configs.PermanenceIncVal);
             for(auto CellIter = this->PredictedCells.begin();
                 CellIter != this->PredictedCells.end();
                 CellIter ++)
             {
                 //weaken incorrect prediction on all cells except the correct predicted one
-                if (gConfigs.PermanenceDecVal && *CellIter != PredictiveCell)
+                if (this->Configs.PermanenceDecVal && *CellIter != PredictiveCell)
                     (*CellIter)->connection().Permanence = (
-                            PredictiveCell->connection().Permanence < gConfigs.PermanenceDecVal ?
+                            PredictiveCell->connection().Permanence < this->Configs.PermanenceDecVal ?
                                 0 :
-                                PredictiveCell->connection().Permanence - gConfigs.PermanenceDecVal
+                                PredictiveCell->connection().Permanence - this->Configs.PermanenceDecVal
                             );
              }
         }
@@ -131,6 +132,7 @@ void clsASMPrivate::executeOnce(ColID_t _activeColIndex, bool _isLearning)
     this->LastActiveColumn = _activeColIndex;
 }
 
+/*************************************************************************************************************/
 void clsASMPrivate::setPredictionState(clsCell* _activeCell)
 {
     for (auto ColIter = this->Cells.begin();
@@ -140,7 +142,7 @@ void clsASMPrivate::setPredictionState(clsCell* _activeCell)
             CellIter != (*ColIter)->end();
             CellIter++)
             if ((*CellIter)->connection().Destination == _activeCell &&
-                (*CellIter)->connection().Permanence >= gConfigs.MinPermanence2Connect)
+                (*CellIter)->connection().Permanence >= this->Configs.MinPermanence2Connect)
             {
                 (*CellIter)->setWasPredictingState(true);
                 this->PredictedCells.push_back(*CellIter);
@@ -148,6 +150,7 @@ void clsASMPrivate::setPredictionState(clsCell* _activeCell)
             }
 }
 
+/*************************************************************************************************************/
 void clsASMPrivate::removeOldPredictions()
 {
     for(auto CellIter = this->PredictedCells.begin();

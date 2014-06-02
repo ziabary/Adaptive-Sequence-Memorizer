@@ -29,23 +29,36 @@ class clsASMPrivate;
 
 typedef unsigned int ColID_t;
 
-struct stuConfigs
-{
-    unsigned short  MinPermanence2Connect;
-    unsigned short  InitialConnectionPermanence;
-    unsigned short  PermanenceIncVal;
-    unsigned short  PermanenceDecVal;
-} extern gConfigs;
-
 class clsASM
 {
 public:
-    clsASM();
+    struct stuConfigs
+    {
+        unsigned short  MinPermanence2Connect;
+        unsigned short  InitialConnectionPermanence;
+        unsigned short  PermanenceIncVal;
+        unsigned short  PermanenceDecVal;
+        stuConfigs(
+                unsigned short  _initialConnectionPermanence = 500,
+                unsigned short  _minPermanence2Connect = 499,
+                unsigned short  _permanenceIncVal= 100,
+                unsigned short  _permanenceDecVal = 1
+                )
+        {
+            this->InitialConnectionPermanence = _initialConnectionPermanence;
+            this->MinPermanence2Connect = _minPermanence2Connect;
+            this->PermanenceDecVal = _permanenceDecVal;
+            this->PermanenceIncVal = _permanenceIncVal;
+        }
+    };
+
+public:
+    clsASM(stuConfigs _configs = stuConfigs());
 
     const std::unordered_set<ColID_t>& executeOnce(ColID_t _input, bool _isLearning = true);
     const std::unordered_set<ColID_t>& execute();
 
-private:
+protected:
     clsASMPrivate* pPrivate;
 };
 

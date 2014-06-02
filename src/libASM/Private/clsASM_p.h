@@ -32,7 +32,7 @@
 class clsASMPrivate
 {
 public:
-    clsASMPrivate();
+    clsASMPrivate(clsASM::stuConfigs _configs);
 
     void executeOnce(ColID_t _activeColIndex, bool _isLearning);
     inline const std::unordered_set<ColID_t>& predictedCols(){
@@ -50,6 +50,7 @@ private:
     std::list<clsCell*>                PredictedCells;
     std::unordered_set<ColID_t>        PredictedCols;
     std::vector<std::vector<clsCell*>* > Cells;
+    clsASM::stuConfigs Configs;
 
     unsigned int ActiveCol;
 };

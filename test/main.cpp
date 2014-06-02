@@ -23,7 +23,7 @@
 #include <iostream>
 #include "clsASM.h"
 
-clsASM ASM;
+clsASM ASM(clsASM::stuConfigs(500,499,100,1));
 
 void printPrediction(ColID_t _id, bool _learn = true)
 {
@@ -38,11 +38,6 @@ void printPrediction(ColID_t _id, bool _learn = true)
 
 int main()
 {
-    gConfigs.InitialConnectionPermanence = 500;
-    gConfigs.MinPermanence2Connect = 499;
-    gConfigs.PermanenceIncVal = 100;
-    gConfigs.PermanenceDecVal = 1;
-
     printPrediction(0);
     printPrediction(1);
     printPrediction(0);
