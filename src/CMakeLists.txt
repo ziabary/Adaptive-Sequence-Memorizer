@@ -1,0 +1,16 @@
+cmake_minimum_required(VERSION 2.8.10)
+
+project(ASM)
+
+#TODO add c++11 flag
+file(GLOB CPP_FILES *.cpp libASM/*.cpp libASM/Private/*.cpp)
+
+add_library(${PROJECT_NAME} SHARED ${CPP_FILES})
+
+target_link_libraries(${PROJECT_NAME})
+
+include_directories(${PROJECT_SOURCE_DIR}/libASM)
+SET(${PROJECT_NAME}_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/libASM
+    CACHE INTERNAL "${PROJECT_NAME}: Include Directories" FORCE)
+
+SET(CMAKE_CXX_FLAGS "-std=c++0x")
