@@ -26,11 +26,12 @@
 #include "Private/clsASM_p.h"
 
 /*************************************************************************************************************/
-clsASM::clsASM(clsASM::stuConfigs _configs):
+clsASM::clsASM(Configs _configs):
     pPrivate(new clsASMPrivate(_configs))
 {
 }
 
+/*************************************************************************************************************/
 const std::unordered_set<ColID_t>& clsASM::executeOnce(ColID_t _input, bool _isLearning)
 {
     this->pPrivate->executeOnce(_input, _isLearning);
@@ -38,7 +39,7 @@ const std::unordered_set<ColID_t>& clsASM::executeOnce(ColID_t _input, bool _isL
 }
 
 /*************************************************************************************************************/
-clsASMPrivate::clsASMPrivate(clsASM::stuConfigs _configs)
+clsASMPrivate::clsASMPrivate(clsASM::Configs _configs)
 {
     this->LastLearningCell = NULL;
     this->Configs = _configs;

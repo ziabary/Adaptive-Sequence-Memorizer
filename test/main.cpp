@@ -23,7 +23,7 @@
 #include <iostream>
 #include "clsASM.h"
 
-clsASM ASM(clsASM::stuConfigs(500,499,100,1));
+clsASM ASM(clsASM::Configs(500,499,100,1));
 
 void printPrediction(ColID_t _id, bool _learn = true)
 {
