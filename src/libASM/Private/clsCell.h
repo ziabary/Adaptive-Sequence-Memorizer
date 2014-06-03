@@ -25,6 +25,10 @@
 
 #include "clsASM.h"
 
+#ifndef NULL
+#define NULL 0
+#endif
+
 static inline void setBit(char& _var, bool _set, const char& _bitenum) {
     _var = (_set ? _var | _bitenum : _var & ~_bitenum);
 }

@@ -28,6 +28,7 @@
 #include "clsASM.h"
 #include "clsCell.h"
 
+typedef std::vector<clsCell*> clsColumn;
 
 class clsASMPrivate
 {
@@ -49,7 +50,7 @@ private:
     bool                               FirstPattern;
     std::list<clsCell*>                PredictedCells;
     std::unordered_set<ColID_t>        PredictedCols;
-    std::vector<std::vector<clsCell*>* > Cells;
+    std::vector<clsColumn*>            Columns;
     clsASM::Configs Configs;
 
     unsigned int ActiveCol;

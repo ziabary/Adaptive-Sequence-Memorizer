@@ -6,12 +6,12 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- 
+
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- 
+
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
@@ -60,30 +60,30 @@ void clsASMPrivate::executeOnce(ColID_t _activeColIndex, bool _isLearning)
     }
 
     //Expand columns if necessary
-    if(_activeColIndex > this->Cells.size())
-        for(unsigned int i=0; i<= _activeColIndex - this->Cells.size(); i++)
-            this->Cells.push_back(new std::vector<clsCell*>);
+    if(_activeColIndex > this->Columns.size())
+        for(unsigned int i=0; i<= _activeColIndex - this->Columns.size(); i++)
+            this->Columns.push_back(new clsColumn);
 
     //If this is the first pattern after NULL pattern
     if (this->FirstPattern)
     {
-        if (this->Cells[_activeColIndex - 1]->empty())
-            this->Cells[_activeColIndex - 1]->push_back(new clsCell(_activeColIndex));
+        if (this->Columns[_activeColIndex - 1]->empty())
+            this->Columns[_activeColIndex - 1]->push_back(new clsCell(_activeColIndex));
 
-        for (auto CellIter = this->Cells[_activeColIndex - 1]->begin();
-             CellIter != this->Cells[_activeColIndex - 1]->end();
+        for (auto CellIter = this->Columns[_activeColIndex - 1]->begin();
+             CellIter != this->Columns[_activeColIndex - 1]->end();
              CellIter++)
             this->setPredictionState(*CellIter);
 
-        this->LastLearningCell = *this->Cells[_activeColIndex - 1]->begin();
+        this->LastLearningCell = *this->Columns[_activeColIndex - 1]->begin();
         this->FirstPattern = false;
         this->LastActiveColumn = _activeColIndex;
         return;
     }
 
     clsCell* PredictiveCell = NULL;
-    for(auto CellIter = this->Cells[_activeColIndex - 1]->begin();
-        CellIter != this->Cells[_activeColIndex - 1]->end();
+    for(auto CellIter = this->Columns[_activeColIndex - 1]->begin();
+        CellIter != this->Columns[_activeColIndex - 1]->end();
         CellIter++)
         if ((*CellIter)->wasPredicting())
         {
@@ -99,7 +99,7 @@ void clsASMPrivate::executeOnce(ColID_t _activeColIndex, bool _isLearning)
             clsCell* NewCell = new clsCell(_activeColIndex);
             NewCell->connection().Destination = LastLearningCell;
             NewCell->connection().Permanence = this->Configs.InitialConnectionPermanence;
-            this->Cells[_activeColIndex - 1]->push_back(NewCell);
+            this->Columns[_activeColIndex - 1]->push_back(NewCell);
         }
         this->removeOldPredictions();
     }
@@ -136,8 +136,8 @@ void clsASMPrivate::executeOnce(ColID_t _activeColIndex, bool _isLearning)
 /*************************************************************************************************************/
 void clsASMPrivate::setPredictionState(clsCell* _activeCell)
 {
-    for (auto ColIter = this->Cells.begin();
-         ColIter != this->Cells.end();
+    for (auto ColIter = this->Columns.begin();
+         ColIter != this->Columns.end();
          ColIter++)
         for(auto CellIter = (*ColIter)->begin();
             CellIter != (*ColIter)->end();
