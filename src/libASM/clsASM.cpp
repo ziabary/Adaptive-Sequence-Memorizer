@@ -46,6 +46,21 @@ clsASMPrivate::clsASMPrivate(clsASM::Configs _configs)
 }
 
 /*************************************************************************************************************/
+clsASMPrivate::~clsASMPrivate()
+{
+    for (auto ColIter = this->Columns.begin();
+         ColIter != this->Columns.end();
+         ColIter++){
+        for(auto CellIter = (*ColIter)->begin();
+            CellIter != (*ColIter)->end();
+            CellIter++)
+            delete *CellIter;
+        (*ColIter)->clear();
+    }
+    this->Columns.clear();
+}
+
+/*************************************************************************************************************/
 void clsASMPrivate::executeOnce(ColID_t _activeColIndex, bool _isLearning)
 {
     this->PredictedCols.clear();

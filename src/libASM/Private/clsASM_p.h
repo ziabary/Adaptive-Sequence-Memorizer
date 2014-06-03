@@ -34,6 +34,7 @@ class clsASMPrivate
 {
 public:
     clsASMPrivate(clsASM::Configs _configs);
+    ~clsASMPrivate();
 
     void executeOnce(ColID_t _activeColIndex, bool _isLearning);
     inline const std::unordered_set<ColID_t>& predictedCols(){
