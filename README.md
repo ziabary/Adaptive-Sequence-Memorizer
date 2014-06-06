@@ -22,7 +22,7 @@ Dependencies:
 
     mkdir -p $ASM/build
     cd $ASM/build
-    cmake ..
+    cmake -DCMAKE_INSTALL_PREFIX:PATH=~/local ..
 
 #### Build:
 
