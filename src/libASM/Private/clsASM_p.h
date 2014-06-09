@@ -40,6 +40,8 @@ public:
     inline const std::unordered_set<ColID_t>& predictedCols(){
         return this->PredictedCols;
     }
+    bool load(const char* _filePath);
+    bool save(const char* _filePath);
 
 private:
     void setPredictionState(clsCell *_activeCell);

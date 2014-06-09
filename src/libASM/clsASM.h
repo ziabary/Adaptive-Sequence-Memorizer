@@ -97,6 +97,8 @@ public:
      */
     const std::unordered_set<ColID_t>& executeOnce(ColID_t _input, bool _isLearning = true);
 
+    bool load(const char* _filePath);
+    bool save(const char* _filePath);
 protected:
     clsASMPrivate* pPrivate;
 };

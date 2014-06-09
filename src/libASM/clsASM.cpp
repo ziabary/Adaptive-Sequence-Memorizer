@@ -21,6 +21,8 @@
  */
 
 #include <exception>
+#include <iostream>
+#include <fstream>
 #include <climits>
 #include "clsASM.h"
 #include "Private/clsASM_p.h"
@@ -36,6 +38,18 @@ const std::unordered_set<ColID_t>& clsASM::executeOnce(ColID_t _input, bool _isL
 {
     this->pPrivate->executeOnce(_input, _isLearning);
     return this->pPrivate->predictedCols();
+}
+
+/*************************************************************************************************************/
+bool clsASM::load(const char *_filePath)
+{
+    return this->pPrivate->load(_filePath);
+}
+
+/*************************************************************************************************************/
+bool clsASM::save(const char *_filePath)
+{
+    return this->pPrivate->save(_filePath);
 }
 
 /*************************************************************************************************************/
@@ -83,7 +97,7 @@ void clsASMPrivate::executeOnce(ColID_t _activeColIndex, bool _isLearning)
     if (this->FirstPattern)
     {
         if (this->Columns[_activeColIndex - 1]->empty())
-            this->Columns[_activeColIndex - 1]->push_back(new clsCell(_activeColIndex));
+            this->Columns[_activeColIndex - 1]->push_back(new clsCell(_activeColIndex, this->Columns.size()));
 
         for (auto CellIter = this->Columns[_activeColIndex - 1]->begin();
              CellIter != this->Columns[_activeColIndex - 1]->end();
@@ -111,7 +125,7 @@ void clsASMPrivate::executeOnce(ColID_t _activeColIndex, bool _isLearning)
         if (_isLearning)
         {
             //Learn new prediction
-            clsCell* NewCell = new clsCell(_activeColIndex);
+            clsCell* NewCell = new clsCell(_activeColIndex, this->Columns[_activeColIndex]->size());
             NewCell->connection().Destination = LastLearningCell;
             NewCell->connection().Permanence = this->Configs.InitialConnectionPermanence;
             this->Columns[_activeColIndex - 1]->push_back(NewCell);
@@ -146,6 +160,43 @@ void clsASMPrivate::executeOnce(ColID_t _activeColIndex, bool _isLearning)
         this->setPredictionState(this->LastLearningCell);
     }
     this->LastActiveColumn = _activeColIndex;
+}
+
+/*************************************************************************************************************/
+bool clsASMPrivate::load(const char *_filePath)
+{
+ ///Load from file
+    this->executeOnce(0, false); // to reset anything.
+}
+
+/*************************************************************************************************************/
+bool clsASMPrivate::save(const char *_filePath)
+{
+    std::ofstream File;
+    File.open(_filePath);
+    if (File.is_open()){
+        File<<"ICP:"<<this->Configs.InitialConnectionPermanence<<std::endl;
+        File<<"MPC:"<<this->Configs.MinPermanence2Connect<<std::endl;
+        File<<"PDV:"<<this->Configs.PermanenceDecVal<<std::endl;
+        File<<"PIV:"<<this->Configs.PermanenceIncVal<<std::endl;
+        File<<"MCS:"<<this->Columns.size()<<std::endl;
+        File<<"******"<<std::endl;
+        int ColID = 0;
+        for(auto ColIter : this->Columns){
+            File<<ColID<<":";
+            int CellID = 0;
+            for(auto CellIter : *ColIter){
+                if (CellIter->connection().Destination)
+                    File<<"["<<
+                          CellIter->connection().Destination->colID()<<":"<<
+                          CellIter->connection().Destination->cellID()<<":"<<
+                          CellIter->connection().Permanence<<"]";
+                else
+                    File<<"[::"<<CellIter->connection().Permanence<<"]";
+            }
+            File<<std::endl;
+        }
+    }
 }
 
 /*************************************************************************************************************/

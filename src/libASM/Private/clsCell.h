@@ -57,8 +57,9 @@ class clsCell
     };
 
 public:
-    clsCell(ColID_t _colID){
+    clsCell(ColID_t _colID, size_t _cellID){
         this->ColID = _colID;
+        this->CellID = _cellID;
         this->States = 0;
     }
 
@@ -82,11 +83,13 @@ public:
 
     inline stuConnection& connection(){return this->Connection; }
     inline ColID_t colID(){return this->ColID;}
+    inline size_t cellID(){return this->CellID;}
 
 private:
     char States;
     stuConnection Connection;
     ColID_t       ColID;
+    size_t        CellID;
 };
 
 #endif // CLSCELL_H
