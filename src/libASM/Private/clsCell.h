@@ -23,18 +23,73 @@
 #ifndef CLSCELL_H
 #define CLSCELL_H
 
-#include "clsASM.h"
+#include "clsASM_p.h"
 
 #ifndef NULL
 #define NULL 0
 #endif
 
-static inline void setBit(char& _var, bool _set, const char& _bitenum) {
+static inline void setBit(uint8_t& _var, bool _set, const uint8_t& _bitenum) {
     _var = (_set ? _var | _bitenum : _var & ~_bitenum);
 }
 
+typedef uint16_t ZIndex_t;
+static ColID_t NOT_ASSIGNED = UINT32_MAX;
+
 class clsCell
 {
+public:
+    struct stuLocation{
+        ColID_t ColID;
+        ZIndex_t ZIndex;
+
+        stuLocation(ColID_t _colID = NOT_ASSIGNED, ZIndex_t _zIndex = 0){
+            this->ColID = _colID;
+            this->ZIndex = _zIndex;
+        }
+
+        inline bool operator==(const stuLocation& _loc) const {
+            return (this->ColID == _loc.ColID && this->ZIndex == _loc.ZIndex);
+        }
+
+        inline bool operator!=(const stuLocation& _loc) const {
+            return ! (*this == _loc);
+        }
+
+        stuLocation& operator = (const stuLocation& _loc){
+            this->ColID = _loc.ColID;
+            this->ZIndex = _loc.ZIndex;
+            return *this;
+        }
+
+        inline void clear(){
+            this->ColID = NOT_ASSIGNED;
+        }
+
+        inline bool isEmpty(){
+            return this->ColID == NOT_ASSIGNED;
+        }
+    };
+
+    struct stuConnection
+    {
+        stuLocation       Destination;
+        Permanence_t      Permanence;
+
+        stuConnection(ColID_t _destCol = NOT_ASSIGNED, ZIndex_t _destZIndex = 0, Permanence_t  _perm = 0){
+            Destination.ColID = _destCol;
+            Destination.ZIndex = _destZIndex;
+            this->Permanence = _perm;
+        }
+
+        stuConnection& operator = (const stuConnection& _con){
+            this->Destination = _con.Destination;
+            this->Permanence = _con.Permanence;
+            return *this;
+        }
+    };
+
+private:
     enum enuState
     {
         STATE_Active        = 0x01,
@@ -45,22 +100,15 @@ class clsCell
         STATE_WasLearning   = 0x40
     };
 
-    struct stuConnection
-    {
-        clsCell*   Destination;
-        unsigned short      Permanence;
-
-        stuConnection(clsCell* _dest = NULL, unsigned short  _perm = 0){
-            this->Destination = _dest;
-            this->Permanence = _perm;
-        }
-    };
-
 public:
-    clsCell(ColID_t _colID, size_t _cellID){
-        this->ColID = _colID;
-        this->CellID = _cellID;
-        this->States = 0;
+    clsCell(ColID_t _colID,
+            ZIndex_t _zIndex,
+            char _states = 0,
+            const stuConnection& _connection = stuConnection()){
+        this->Loc.ColID = _colID;
+        this->Loc.ZIndex = _zIndex;
+        this->States = _states;
+        this->Connection = _connection;
     }
 
     inline bool isActive() {return this->States & STATE_Active;}
@@ -79,17 +127,19 @@ public:
     inline bool wasLearning()   {return this->States & STATE_WasLearning;}
     inline void setWasLearningState(bool _value){setBit(this->States, _value, STATE_WasLearning);}
 
-    inline bool hasConnection(){return this->Connection.Destination != NULL;}
+    inline uint16_t states(){
+        return this->States;
+    }
+
+    inline bool hasConnection(){return this->Connection.Destination.ColID != NOT_ASSIGNED;}
 
     inline stuConnection& connection(){return this->Connection; }
-    inline ColID_t colID(){return this->ColID;}
-    inline size_t cellID(){return this->CellID;}
+    inline const stuLocation& loc(){return this->Loc;}
 
 private:
-    char States;
+    uint8_t States;
     stuConnection Connection;
-    ColID_t       ColID;
-    size_t        CellID;
+    stuLocation   Loc;
 };
 
 #endif // CLSCELL_H

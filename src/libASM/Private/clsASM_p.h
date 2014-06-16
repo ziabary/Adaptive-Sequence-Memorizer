@@ -37,21 +37,29 @@ public:
     ~clsASMPrivate();
 
     void executeOnce(ColID_t _activeColIndex, bool _isLearning);
-    inline const std::unordered_set<ColID_t>& predictedCols(){
+    inline const std::unordered_set<ColID_t>& predictedCols() const{
         return this->PredictedCols;
     }
-    bool load(const char* _filePath);
+    bool load(const char* _filePath, bool _throw = false);
     bool save(const char* _filePath);
 
 private:
+    void reset();
     void setPredictionState(clsCell *_activeCell);
     void removeOldPredictions();
+    inline clsCell* cell(const clsCell::stuLocation& _loc) const{
+        return this->column(_loc.ColID)->at(_loc.ZIndex);
+    }
+
+    inline clsColumn* column(ColID_t _col) const{
+        return this->Columns[_col - 1];
+    }
 
 private:
-    clsCell*                           LastLearningCell;
+    clsCell::stuLocation               LastLearningCell;
     ColID_t                            LastActiveColumn;
     bool                               FirstPattern;
-    std::list<clsCell*>                PredictedCells;
+    std::list<clsCell::stuLocation>    PredictedCells;
     std::unordered_set<ColID_t>        PredictedCols;
     std::vector<clsColumn*>            Columns;
     clsASM::Configs Configs;

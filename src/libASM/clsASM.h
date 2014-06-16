@@ -27,7 +27,8 @@
 
 class clsASMPrivate;
 
-typedef unsigned int ColID_t;
+typedef uint32_t ColID_t;
+typedef uint16_t Permanence_t;
 
 class clsASM
 {
@@ -38,10 +39,10 @@ public:
      */
     struct Configs
     {
-        unsigned short  MinPermanence2Connect;
-        unsigned short  InitialConnectionPermanence;
-        unsigned short  PermanenceIncVal;
-        unsigned short  PermanenceDecVal;
+        Permanence_t  MinPermanence2Connect;
+        Permanence_t  InitialConnectionPermanence;
+        Permanence_t  PermanenceIncVal;
+        Permanence_t  PermanenceDecVal;
 
         /**
          * @brief Configs constructor
@@ -51,10 +52,10 @@ public:
          * @param _permanenceDecVal Value to be decreased from connection permanence value on incorrect predictions
          */
         Configs(
-                unsigned short  _initialConnectionPermanence = 500,
-                unsigned short  _minPermanence2Connect = 499,
-                unsigned short  _permanenceIncVal= 100,
-                unsigned short  _permanenceDecVal = 1
+                Permanence_t  _initialConnectionPermanence = 500,
+                Permanence_t  _minPermanence2Connect = 499,
+                Permanence_t  _permanenceIncVal= 100,
+                Permanence_t  _permanenceDecVal = 1
                 )
         {
             this->InitialConnectionPermanence = _initialConnectionPermanence;
@@ -97,7 +98,7 @@ public:
      */
     const std::unordered_set<ColID_t>& executeOnce(ColID_t _input, bool _isLearning = true);
 
-    bool load(const char* _filePath);
+    bool load(const char* _filePath, bool _throw = false);
     bool save(const char* _filePath);
 protected:
     clsASMPrivate* pPrivate;

@@ -66,6 +66,9 @@ int main()
     printPrediction(2);
     printPrediction(4);
 
+    ASM.save("asm.txt");
+    ASM.load("asm.txt");
+    ASM.save("asm2.txt");
     std::cout<<"************ LEARNING Finished **********"<<std::endl;
 
     printPrediction(0, false);
