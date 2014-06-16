@@ -9,6 +9,8 @@ add_library(${PROJECT_NAME} SHARED ${CPP_FILES})
 
 target_link_libraries(${PROJECT_NAME})
 
+set_target_properties(${PROJECT_NAME} PROPERTIES  VERSION 2.0.0  SOVERSION 2)
+
 include_directories(${PROJECT_SOURCE_DIR}/libASM)
 SET(${PROJECT_NAME}_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/libASM
     CACHE INTERNAL "${PROJECT_NAME}: Include Directories" FORCE)
