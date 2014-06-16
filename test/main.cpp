@@ -74,7 +74,7 @@ int main()
     printPrediction(0, false);
 //    printPrediction(1, false);
 //    printPrediction(2, false);
-//    printPrediction(2, false);
+    printPrediction(2, false);
 //    printPrediction(3, false);
     printPrediction(3, false);
     printPrediction(2, false);

@@ -74,6 +74,9 @@ void clsASMPrivate::reset()
     for (auto ColIter = this->Columns.begin();
          ColIter != this->Columns.end();
          ColIter++){
+        if (*ColIter == NULL)
+            continue;
+
         for(auto CellIter = (*ColIter)->begin();
             CellIter != (*ColIter)->end();
             CellIter++)
@@ -97,10 +100,20 @@ void clsASMPrivate::executeOnce(ColID_t _activeColIndex, bool _isLearning)
         return;
     }
 
+    //if input column has not yet been seen do nothing as nothing
+    //related has been learnt
+    if (_isLearning == false &&
+            (_activeColIndex > this->Columns.size() ||
+             this->column(_activeColIndex) == NULL))
+        return;
+
     //Expand columns if necessary
     if(_activeColIndex > this->Columns.size())
-        for(auto i=0; i<= _activeColIndex - this->Columns.size(); i++)
-            this->Columns.push_back(new clsColumn);
+        this->Columns.resize(_activeColIndex, NULL);
+
+    //Expansion creates Columns with no cell allocate when necessary
+    if (this->column(_activeColIndex) == NULL)
+        this->Columns[_activeColIndex - 1] = new clsColumn;
 
     //If this is the first pattern after NULL pattern
     if (this->FirstPattern)
@@ -210,8 +223,7 @@ bool clsASMPrivate::load(const char *_filePath, bool _throw)
                     }else if (Part1 == "PIV"){
                         this->Configs.PermanenceIncVal = std::stoul(Part2);
                     }else if (Part1 == "MCS"){
-                        for(auto i=0; i<= std::stoul(Part2) - 1; i++)
-                            this->Columns.push_back(new clsColumn);
+                        this->Columns.resize(std::stoul(Part2), NULL);
                     }else
                         throw std::logic_error("Invalid identifier <" + Part1 + "> on line: " + std::to_string(Line));
                 }else{
@@ -224,6 +236,8 @@ bool clsASMPrivate::load(const char *_filePath, bool _throw)
                     if (Part1.empty() || Part2.empty() || Part2.at(0) != '[' || Part2.at(Part2.size() - 1)!= ']')
                         throw std::logic_error("Data missing on line: " + std::to_string(Line));
                     ColID_t ColID = std::stoull(Part1);
+
+                    this->Columns[ColID - 1] = new clsColumn;
 
                     clsCell::stuConnection Connection;
                     char States;
@@ -313,20 +327,23 @@ bool clsASMPrivate::save(const char *_filePath)
         File<<FILE_SEGMENT_SEPARATOR<<std::endl;
         int ColID = 0;
         for(auto ColIter : this->Columns){
-            File<<++ColID<<":";
-            for(auto CellIter : *ColIter){
-                if (CellIter->hasConnection())
-                    File<<"["<<
-                          CellIter->states()<<":"<<
-                          CellIter->connection().Destination.ColID<<":"<<
-                          CellIter->connection().Destination.ZIndex<<":"<<
-                          CellIter->connection().Permanence<<"]";
-                else
-                    File<<"["<<
-                          CellIter->states()<<":::"<<
-                          CellIter->connection().Permanence<<"]";
+            ColID++;
+            if (ColIter && ColIter->size()){
+                File<<ColID<<":";
+                for(auto CellIter : *ColIter){
+                    if (CellIter->hasConnection())
+                        File<<"["<<
+                              CellIter->states()<<":"<<
+                              CellIter->connection().Destination.ColID<<":"<<
+                              CellIter->connection().Destination.ZIndex<<":"<<
+                              CellIter->connection().Permanence<<"]";
+                    else
+                        File<<"["<<
+                              CellIter->states()<<":::"<<
+                              CellIter->connection().Permanence<<"]";
+                }
+                File<<std::endl;
             }
-            File<<std::endl;
         }
     }
 }
@@ -337,16 +354,17 @@ void clsASMPrivate::setPredictionState(clsCell* _activeCell)
     for (auto ColIter = this->Columns.begin();
          ColIter != this->Columns.end();
          ColIter++)
-        for(auto CellIter = (*ColIter)->begin();
-            CellIter != (*ColIter)->end();
-            CellIter++)
-            if (this->cell((*CellIter)->loc())->connection().Destination == _activeCell->loc() &&
-                this->cell((*CellIter)->loc())->connection().Permanence >= this->Configs.MinPermanence2Connect)
-            {
-                this->cell((*CellIter)->loc())->setWasPredictingState(true);
-                this->PredictedCells.push_back((*CellIter)->loc());
-                this->PredictedCols.insert((*CellIter)->loc().ColID);
-            }
+        if (*ColIter)
+            for(auto CellIter = (*ColIter)->begin();
+                CellIter != (*ColIter)->end();
+                CellIter++)
+                if (this->cell((*CellIter)->loc())->connection().Destination == _activeCell->loc() &&
+                    this->cell((*CellIter)->loc())->connection().Permanence >= this->Configs.MinPermanence2Connect)
+                {
+                    this->cell((*CellIter)->loc())->setWasPredictingState(true);
+                    this->PredictedCells.push_back((*CellIter)->loc());
+                    this->PredictedCols.insert((*CellIter)->loc().ColID);
+                }
 }
 
 /*************************************************************************************************************/
