@@ -34,7 +34,6 @@ static inline void setBit(uint8_t& _var, bool _set, const uint8_t& _bitenum) {
 }
 
 typedef uint16_t ZIndex_t;
-static ColID_t NOT_ASSIGNED = UINT32_MAX;
 
 class clsCell
 {

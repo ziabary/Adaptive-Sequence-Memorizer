@@ -3,9 +3,11 @@ cmake_minimum_required(VERSION 2.8.0)
 project(ASM)
 
 #TODO add c++11 flag
-file(GLOB CPP_FILES *.cpp libASM/*.cpp libASM/Private/*.cpp)
+file(GLOB_RECURSE CPP_FILES "*.cpp" )
+file(GLOB_RECURSE INC_FILES "*.h" )
+file(GLOB_RECURSE INCPP_FILES "*.hpp" )
 
-add_library(${PROJECT_NAME} SHARED ${CPP_FILES})
+add_library(${PROJECT_NAME} SHARED ${CPP_FILES} ${INC_FILES} ${INCPP_FILES})
 
 target_link_libraries(${PROJECT_NAME})
 
@@ -19,3 +21,4 @@ SET(CMAKE_CXX_FLAGS "-std=c++0x")
 
 install(TARGETS ${PROJECT_NAME} DESTINATION lib)
 install(FILES libASM/clsASM.h DESTINATION include/lib${PROJECT_NAME})
+install(FILES libASM/DataGenerators/*.h DESTINATION include/lib${PROJECT_NAME}/DataGenerators)

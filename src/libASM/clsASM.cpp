@@ -44,6 +44,26 @@ const std::unordered_set<ColID_t>& clsASM::executeOnce(ColID_t _input, bool _isL
 }
 
 /*************************************************************************************************************/
+const std::unordered_set<ColID_t> &clsASM::execute(intfInputIterator *_inputGenerator, int32_t _ticks, bool _isLearning)
+{
+    ColID_t ColID;
+    std::unordered_set<ColID_t>& PredictedCols = (std::unordered_set<ColID_t>&)this->executeOnce(0);
+
+    if (_ticks > 0)
+        _ticks--;
+    while((ColID = _inputGenerator->next()) != NOT_ASSIGNED)
+    {
+        PredictedCols = (std::unordered_set<ColID_t>&)this->executeOnce(ColID,_isLearning);
+
+        if(_ticks == 0)
+            break;
+        else if (_ticks > 0)
+            _ticks--;
+    }
+    return PredictedCols;
+}
+
+/*************************************************************************************************************/
 bool clsASM::load(const char *_filePath, bool _throw)
 {
     return this->pPrivate->load(_filePath, _throw);
@@ -150,7 +170,7 @@ void clsASMPrivate::executeOnce(ColID_t _activeColIndex, bool _isLearning)
             //Learn new prediction
             clsCell* NewCell =
                     new clsCell(_activeColIndex, this->column(_activeColIndex)->size());
-            NewCell->connection().Destination = LastLearningCell;
+            NewCell->connection().Destination = this->LastLearningCell;
             NewCell->connection().Permanence = this->Configs.InitialConnectionPermanence;
             this->column(_activeColIndex)->push_back(NewCell);
         }

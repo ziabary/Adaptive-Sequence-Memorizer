@@ -22,6 +22,8 @@
 
 #include <iostream>
 #include "clsASM.h"
+#include "DataGenerators/clsIncrementalSequenceGenerator.hpp"
+#include "DataGenerators/clsFlashCardGenerator.hpp"
 
 clsASM ASM(clsASM::Configs(500,499,100,1));
 
@@ -36,40 +38,24 @@ void printPrediction(ColID_t _id, bool _learn = true)
     std::cout<<std::endl;
 }
 
+
 int main()
 {
-    printPrediction(0);
-    printPrediction(1);
-    printPrediction(0);
-    printPrediction(1);
-    printPrediction(2);
-    printPrediction(0);
-    printPrediction(1);
-    printPrediction(2);
-    printPrediction(2);
-    printPrediction(0);
-    printPrediction(1);
-    printPrediction(2);
-    printPrediction(2);
-    printPrediction(3);
-    printPrediction(0);
-    printPrediction(1);
-    printPrediction(2);
-    printPrediction(2);
-    printPrediction(3);
-    printPrediction(2);
-    printPrediction(0);
-    printPrediction(1);
-    printPrediction(2);
-    printPrediction(2);
-    printPrediction(3);
-    printPrediction(2);
-    printPrediction(4);
+    std::vector<ColID_t> Sequence;
+    Sequence.push_back(0);
+    Sequence.push_back(1);
+    Sequence.push_back(2);
+    Sequence.push_back(2);
+    Sequence.push_back(3);
+    Sequence.push_back(2);
+    Sequence.push_back(4);
 
+    ASM.execute(new clsIncrementalSequenceGenerator(Sequence));
+
+    std::cout<<"************ LEARNING Finished **********"<<std::endl;
     ASM.save("asm.txt");
     ASM.load("asm.txt");
     ASM.save("asm2.txt");
-    std::cout<<"************ LEARNING Finished **********"<<std::endl;
 
     printPrediction(0, false);
 //    printPrediction(1, false);
@@ -78,6 +64,9 @@ int main()
 //    printPrediction(3, false);
     printPrediction(3, false);
     printPrediction(2, false);
+    printPrediction(4, false);
+    printPrediction(2, false);
+    printPrediction(5, false);
 
     return 0;
 }

@@ -29,6 +29,19 @@ class clsASMPrivate;
 
 typedef uint32_t ColID_t;
 typedef uint16_t Permanence_t;
+static ColID_t NOT_ASSIGNED = UINT32_MAX;
+
+/**
+ * @brief The intfInputIterator class is used to derive classes in order to be used in execute command
+ */
+class intfInputIterator
+{
+public:
+    intfInputIterator(){}
+
+    virtual ColID_t next() = 0;
+};
+
 
 class clsASM
 {
@@ -97,6 +110,18 @@ public:
      * @return return A set of predicted PatternIDs based on input patterID sequences.
      */
     const std::unordered_set<ColID_t>& executeOnce(ColID_t _input, bool _isLearning = true);
+
+    /**
+     * @brief execute this method will show a sequence of patterns to the network using input generator
+     * @param _inputGenerator a derived class from intfInputIterator which will generate inputs
+     * @param _ticks how many times to iterate using Input Generator -1 means until end of data
+     * @param _isLearning indicates wheter learn input or just predict next patternID
+     * @return A set of predicted PatternIDs based on input patterID sequences
+     */
+    const std::unordered_set<ColID_t>& execute(intfInputIterator *_inputGenerator,
+                                               int32_t _ticks = -1,
+                                               bool _isLearning = true);
+
 
     bool load(const char* _filePath, bool _throw = false);
     bool save(const char* _filePath);
