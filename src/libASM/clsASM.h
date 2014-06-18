@@ -78,6 +78,12 @@ public:
         }
     };
 
+    enum enuLearningLevel{
+        LearningFrozen,
+        AwardAndPunishment,
+        LearningFull
+    };
+
 public:
     /**
      * @brief clsASM Base class implementing Adaptive Sequence Memorizer
@@ -87,29 +93,36 @@ public:
 
     /**
      * @brief executeOnce Main method used to both learn sequences and retrieve them.
-     * On each _input if it is se to 0 sequence memorization and retrieval will be restarted.
-     * So _input=0 can be used to separate different sequences. If _input > 0 and it was not
-     * seen before (greatest ID on old inputs was less than _input) then it will be added to
-     * valid inputs and consumed memory will be increased. Based on Old inputs (those after
-     * the last _input=0) it will predict IDs  (if any) which can be seen after. If
-     * _islearning=true then new patterns will make new connections between inputs with default
-     * connection permanence set to Configs::InitialConnectionPermanence, correct predctions
-     * (when next _input is one of those predicted) will be awarded by increasing connections
-     * permanence on the prediction path using Configs::PermanenceIncVal, and those predctions
-     * that were incorrect will be punished by Configs::PermanenceDecVal.
-     * This way new sequences can be memorized and less used sequences can be forgotten because
-     * their connection permanence will be decreased to less than Configs::MinPermanence2Connect
-     * so they will be disconnected. Connections that has been decreased to zero will be removed.
-     * When _isLearning = false all the permanence values will be frozen and no new connection
-     * will be made. This is usefull for systems that will learn in a time period and then will
-     * be used to just predict sequences.
+     * Based on learning level there will be different actions:
+     * 1- Learning Full:
+     *  If @see _learningLevel is set to full then each input id will be learnt as a sequence of old inputs.
+     *  @see _input = 0 is reserved to reset sequences and clear all predictions. If @see _input > 0 and
+     *  it was not seen before (greatest ID on old inputs was less than _input) then it will be added to
+     *  valid inputs and buffer sizes will be increased. Take note that non consecutive inputs will cause
+     *  to reserve space for those input IDs expected between the las seen and the new @see _input ID.
+     *  Based on the last seen input sequences next step will be predicted and returned as an unordered
+     *  list of input IDs. Also new sequences will be memorized creating new cells and cell connections between
+     *  last learning cell and the new input column cell. Each time with a new input if it was predicted in
+     *  last step it will be awarded and it's connection permanence will be increased (@see Configs::PermanenceIncVal)
+     *  at the same time incorrect predicted cells will be punished decreasing their permanence value (@see
+     *  Configs::PermanenceDecVal).This way new sequences can be memorized and less used sequences can be
+     *  forgotten because their connection permanence will be decreased to less than Configs::MinPermanence2Connect
+     *  so they will be disconnected. Connections that has been decreased to zero will be removed.
+     * 2- Award and Punishment:
+     *   When @see _learningLevel is set AwardAndPunishment no new cells nor connections will be made but next step
+     *   prediction, awarding correct predictions and punishment of incorrect ones will be made as described
+     *   above.
+     * 3- Frozen
+     *   When @see _isLearning = Frozen all the permanence values will be frozen and no new connection
+     *   will be made. This is usefull for systems that will learn in a time period and then will
+     *   be used to just predict sequences without any feedback.
      *
-     *
-     * @param _input ID of the sequence to be memorized.
-     * @param _isLearning indicates wheter learn input or just predict next patternID
+     * @param _input ID of the current step sequence to be memorized or retrieved.
+     * @param _learningLevel indicates how to change connection permanence valuse. See description
      * @return return A set of predicted PatternIDs based on input patterID sequences.
      */
-    const std::unordered_set<ColID_t>& executeOnce(ColID_t _input, bool _isLearning = true);
+    const std::unordered_set<ColID_t>& executeOnce(ColID_t _input,
+                                                   enuLearningLevel _learningLevel = LearningFull);
 
     /**
      * @brief execute this method will show a sequence of patterns to the network using input generator
@@ -118,10 +131,22 @@ public:
      * @param _isLearning indicates wheter learn input or just predict next patternID
      * @return A set of predicted PatternIDs based on input patterID sequences
      */
-    const std::unordered_set<ColID_t>& execute(intfInputIterator *_inputGenerator,
+    const std::unordered_set<ColID_t>& execute(intfInputIterator* _inputGenerator,
                                                int32_t _ticks = -1,
-                                               bool _isLearning = true);
-
+                                               enuLearningLevel _learningLevel = LearningFull);
+    /**
+     * @brief feedback external feedback to award or punishment of last prediction.
+     * Awarding and Punishment score is controlled using @see _score.
+     * @param _colID columnID to be awarded on positive feedback. and exceptional column on
+     * negative feedbacks. if _colID=0 and _score is positive then nothing will happen but if _score
+     * is negative then all predicted columns will be punished.
+     * @param _score a real number between -2.0 and 2.0 which will be used as a multiplier to
+     * Configs::PermanenceIncVal and Configs::PermanenceDecVal to award or punish. Positive _score will be
+     * used to award and negative _score is used to punish. if _score = 0 then cell connection in the
+     * specified column will be awarded by Configs::PermanenceIncVal and all other predicted cells will be
+     * punished by Configs::PermanenceDecVal
+     */
+    void feedback(ColID_t _colID, double _score = 0);
 
     bool load(const char* _filePath, bool _throw = false);
     bool save(const char* _filePath);

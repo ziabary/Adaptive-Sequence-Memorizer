@@ -37,14 +37,17 @@ clsASM::clsASM(Configs _configs):
 }
 
 /*************************************************************************************************************/
-const std::unordered_set<ColID_t>& clsASM::executeOnce(ColID_t _input, bool _isLearning)
+const std::unordered_set<ColID_t>& clsASM::executeOnce(ColID_t _input,
+                                                       enuLearningLevel _learningLevel)
 {
-    this->pPrivate->executeOnce(_input, _isLearning);
+    this->pPrivate->executeOnce(_input, _learningLevel);
     return this->pPrivate->predictedCols();
 }
 
 /*************************************************************************************************************/
-const std::unordered_set<ColID_t> &clsASM::execute(intfInputIterator *_inputGenerator, int32_t _ticks, bool _isLearning)
+const std::unordered_set<ColID_t> &clsASM::execute(intfInputIterator *_inputGenerator,
+                                                   int32_t _ticks,
+                                                   enuLearningLevel _learningLevel)
 {
     ColID_t ColID;
     std::unordered_set<ColID_t>& PredictedCols = (std::unordered_set<ColID_t>&)this->executeOnce(0);
@@ -53,7 +56,7 @@ const std::unordered_set<ColID_t> &clsASM::execute(intfInputIterator *_inputGene
         _ticks--;
     while((ColID = _inputGenerator->next()) != NOT_ASSIGNED)
     {
-        PredictedCols = (std::unordered_set<ColID_t>&)this->executeOnce(ColID,_isLearning);
+        PredictedCols = (std::unordered_set<ColID_t>&)this->executeOnce(ColID,_learningLevel);
 
         if(_ticks == 0)
             break;
@@ -61,6 +64,15 @@ const std::unordered_set<ColID_t> &clsASM::execute(intfInputIterator *_inputGene
             _ticks--;
     }
     return PredictedCols;
+}
+
+/*************************************************************************************************************/
+void clsASM::feedback(ColID_t _colID, double _score)
+{
+    if (_colID == 0 && _score > 0)
+        return;
+
+    this->pPrivate->feedback(_colID, _score);
 }
 
 /*************************************************************************************************************/
@@ -107,7 +119,7 @@ void clsASMPrivate::reset()
 }
 
 /*************************************************************************************************************/
-void clsASMPrivate::executeOnce(ColID_t _activeColIndex, bool _isLearning)
+void clsASMPrivate::executeOnce(ColID_t _activeColIndex, clsASM::enuLearningLevel _learningLevel)
 {
     this->PredictedCols.clear();
     //On NULL pattern clear all history
@@ -122,7 +134,7 @@ void clsASMPrivate::executeOnce(ColID_t _activeColIndex, bool _isLearning)
 
     //if input column has not yet been seen do nothing as nothing
     //related has been learnt
-    if (_isLearning == false &&
+    if (_learningLevel == clsASM::LearningFrozen &&
             (_activeColIndex > this->Columns.size() ||
              this->column(_activeColIndex) == NULL))
         return;
@@ -165,7 +177,7 @@ void clsASMPrivate::executeOnce(ColID_t _activeColIndex, bool _isLearning)
 
     if (PredictiveCell == NULL)
     {
-        if (_isLearning)
+        if (_learningLevel == clsASM::LearningFull)
         {
             //Learn new prediction
             clsCell* NewCell =
@@ -178,9 +190,9 @@ void clsASMPrivate::executeOnce(ColID_t _activeColIndex, bool _isLearning)
     }
     else
     {
-        LastLearningCell = PredictiveCell->loc();
+        this->LastLearningCell = PredictiveCell->loc();
 
-        if (_isLearning)
+        if (_learningLevel != clsASM::LearningFrozen)
         {
             //reinforce correct prediction
             PredictiveCell->connection().Permanence = (
@@ -198,6 +210,8 @@ void clsASMPrivate::executeOnce(ColID_t _activeColIndex, bool _isLearning)
                                 0 :
                                 PredictiveCell->connection().Permanence - this->Configs.PermanenceDecVal
                             );
+                if (this->cell(*CellIter)->connection().Permanence == 0)
+                    this->removeCell(*CellIter);
              }
         }
         this->removeOldPredictions();
@@ -329,7 +343,7 @@ bool clsASMPrivate::load(const char *_filePath, bool _throw)
         }
     }
 
-    this->executeOnce(0, false); // to reset anything.
+    this->executeOnce(0, clsASM::LearningFrozen); // to reset anything.
     return true;
 }
 
@@ -369,6 +383,54 @@ bool clsASMPrivate::save(const char *_filePath)
 }
 
 /*************************************************************************************************************/
+void clsASMPrivate::feedback(ColID_t _colID, double _score)
+{
+    if (_score == 0){
+        this->award(_colID, this->Configs.PermanenceIncVal);
+        this->punish(_colID, this->Configs.PermanenceDecVal);
+    }else if (_score > 0){
+        this->award(_colID, this->Configs.PermanenceIncVal * (2 > _score ? _score : 2.0));
+    }else{
+        this->punish(_colID, this->Configs.PermanenceDecVal * -1 * (-2 > _score ? _score : -2.0));
+    }
+}
+
+/*************************************************************************************************************/
+void clsASMPrivate::award(ColID_t _colID, Permanence_t _pVal)
+{
+    //Find cell in prediction list which belongs to the awarded column and reinforce it's connection
+    for(auto CellIter = this->PredictedCells.begin();
+        CellIter != this->PredictedCells.end();
+        CellIter ++)
+        if (CellIter->ColID == _colID){
+            this->cell(*CellIter)->connection().Permanence = (
+                    SHRT_MAX - this->cell(*CellIter)->connection().Permanence < _pVal ?
+                        SHRT_MAX :
+                        this->cell(*CellIter)->connection().Permanence + _pVal);
+            break;
+        }
+}
+
+/*************************************************************************************************************/
+void clsASMPrivate::punish(ColID_t _colID, Permanence_t _pVal)
+{
+    for(auto CellIter = this->PredictedCells.begin();
+        CellIter != this->PredictedCells.end();
+        CellIter ++)
+    {
+        //weaken incorrect prediction on all predicted cells except the cell on specified column
+        if (CellIter->ColID != _colID)
+            this->cell(*CellIter)->connection().Permanence = (
+                    this->cell(*CellIter)->connection().Permanence < _pVal ?
+                        0 :
+                        this->cell(*CellIter)->connection().Permanence - _pVal
+                    );
+        if (this->cell(*CellIter)->connection().Permanence == 0)
+            this->removeCell(*CellIter);
+     }
+}
+
+/*************************************************************************************************************/
 void clsASMPrivate::setPredictionState(clsCell* _activeCell)
 {
     for (auto ColIter = this->Columns.begin();
@@ -378,7 +440,7 @@ void clsASMPrivate::setPredictionState(clsCell* _activeCell)
             for(auto CellIter = (*ColIter)->begin();
                 CellIter != (*ColIter)->end();
                 CellIter++)
-                if (this->cell((*CellIter)->loc())->connection().Destination == _activeCell->loc() &&
+                if (*CellIter && this->cell((*CellIter)->loc())->connection().Destination == _activeCell->loc() &&
                     this->cell((*CellIter)->loc())->connection().Permanence >= this->Configs.MinPermanence2Connect)
                 {
                     this->cell((*CellIter)->loc())->setWasPredictingState(true);
@@ -395,4 +457,21 @@ void clsASMPrivate::removeOldPredictions()
         CellIter ++)
         this->cell(*CellIter)->setWasPredictingState(false);
     this->PredictedCells.clear();
+}
+
+/*************************************************************************************************************/
+void clsASMPrivate::removeCell(clsCell::stuLocation &_loc)
+{
+    ///@TODO implement me
+/*    for (auto ColIter = this->Columns.begin();
+         ColIter != this->Columns.end();
+         ColIter++)
+        if (*ColIter)
+            for(auto CellIter = (*ColIter)->begin();
+                CellIter != (*ColIter)->end();
+                CellIter++)
+                if (*CellIter && this->cell((*CellIter)->loc())->connection().Destination == _loc)
+                    this->removeCell(_loc);
+
+    delete this->column(_loc.ColID)->at(_loc.ZIndex);*/
 }
