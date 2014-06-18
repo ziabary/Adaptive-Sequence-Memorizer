@@ -28,6 +28,8 @@
 #include "clsASM.h"
 #include "clsCell.h"
 
+namespace AdaptiveSequenceMemorizer {
+
 typedef std::vector<clsCell*> clsColumn;
 
 class clsASMPrivate
@@ -37,7 +39,7 @@ public:
     ~clsASMPrivate();
 
     void executeOnce(ColID_t _activeColIndex, clsASM::enuLearningLevel _learningLevel);
-    inline const std::unordered_set<ColID_t>& predictedCols() const{
+    inline const clsASM::Prediction_t& predictedCols() const{
         return this->PredictedCols;
     }
     bool load(const char* _filePath, bool _throw = false);
@@ -66,11 +68,13 @@ private:
     ColID_t                            LastActiveColumn;
     bool                               FirstPattern;
     std::list<clsCell::stuLocation>    PredictedCells;
-    std::unordered_set<ColID_t>        PredictedCols;
+    clsASM::Prediction_t               PredictedCols;
+    u_int64_t                          SumPathPermanence;
+    u_int32_t                          PathItems;
     std::vector<clsColumn*>            Columns;
     clsASM::Configs Configs;
 
     unsigned int ActiveCol;
 };
-
+}
 #endif // CLSASM_P_H

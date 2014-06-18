@@ -23,6 +23,7 @@
 #include "clsASM.h"
 #include <vector>
 
+namespace AdaptiveSequenceMemorizer {
 /**
  *  @brief The clsFlashCardGenerator class
  *
@@ -65,3 +66,4 @@ private:
 
 };
 
+}

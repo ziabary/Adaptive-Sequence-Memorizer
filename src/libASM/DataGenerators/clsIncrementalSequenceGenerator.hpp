@@ -23,6 +23,8 @@
 #include "clsASM.h"
 #include <vector>
 
+namespace AdaptiveSequenceMemorizer {
+
 /**
  * @brief The clsIncrementalSequenceGenerator class
  */
@@ -54,3 +56,4 @@ private:
     std::vector<ColID_t> InputList;
 };
 
+}

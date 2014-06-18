@@ -25,16 +25,18 @@
 #include "DataGenerators/clsIncrementalSequenceGenerator.hpp"
 #include "DataGenerators/clsFlashCardGenerator.hpp"
 
+using namespace AdaptiveSequenceMemorizer;
+
 clsASM ASM(clsASM::Configs(500,499,100,1));
 
 void printPrediction(ColID_t _id, bool _learn = true)
 {
-    const std::unordered_set<ColID_t>& Prediction = ASM.executeOnce(_id);
+    const clsASM::Prediction_t& Predictions = ASM.executeOnce(_id);
     /*if (_learn || _id == 0 || _id == 1)
         return;/**/
     std::cout<<"("<<_id<<"): "<<std::flush;
-    for(ColID_t Predicted : Prediction)
-        std::cout<<Predicted<<",";
+    for(auto Predicted : Predictions)
+        std::cout<<Predicted.ColID<<"("<<Predicted.PathPermanence<<"),";
     std::cout<<std::endl;
 }
 

@@ -29,6 +29,8 @@
 #define NULL 0
 #endif
 
+namespace AdaptiveSequenceMemorizer{
+
 static inline void setBit(uint8_t& _var, bool _set, const uint8_t& _bitenum) {
     _var = (_set ? _var | _bitenum : _var & ~_bitenum);
 }
@@ -141,4 +143,5 @@ private:
     stuLocation   Loc;
 };
 
+}
 #endif // CLSCELL_H

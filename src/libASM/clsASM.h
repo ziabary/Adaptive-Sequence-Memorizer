@@ -23,7 +23,9 @@
 #ifndef CLSASM_H
 #define CLSASM_H
 
-#include <unordered_set>
+#include <list>
+
+namespace AdaptiveSequenceMemorizer{
 
 class clsASMPrivate;
 
@@ -46,6 +48,7 @@ public:
 class clsASM
 {
 public:
+
     /**
      * @brief The Configs struct contains network configuration
      * @see executeOnce for more info
@@ -66,8 +69,8 @@ public:
          */
         Configs(
                 Permanence_t  _initialConnectionPermanence = 500,
-                Permanence_t  _minPermanence2Connect = 499,
-                Permanence_t  _permanenceIncVal= 100,
+                Permanence_t  _minPermanence2Connect = 300,
+                Permanence_t  _permanenceIncVal= 50,
                 Permanence_t  _permanenceDecVal = 1
                 )
         {
@@ -83,6 +86,18 @@ public:
         AwardAndPunishment,
         LearningFull
     };
+
+    struct stuPrediction{
+        ColID_t       ColID;
+        Permanence_t  PathPermanence;
+        stuPrediction(ColID_t _colID = NOT_ASSIGNED,
+                  Permanence_t _perm = 0){
+            this->ColID = _colID;
+            this->PathPermanence = _perm;
+        }
+    };
+
+    typedef std::list<clsASM::stuPrediction>  Prediction_t;
 
 public:
     /**
@@ -121,7 +136,7 @@ public:
      * @param _learningLevel indicates how to change connection permanence valuse. See description
      * @return return A set of predicted PatternIDs based on input patterID sequences.
      */
-    const std::unordered_set<ColID_t>& executeOnce(ColID_t _input,
+    const Prediction_t& executeOnce(ColID_t _input,
                                                    enuLearningLevel _learningLevel = LearningFull);
 
     /**
@@ -131,7 +146,7 @@ public:
      * @param _isLearning indicates wheter learn input or just predict next patternID
      * @return A set of predicted PatternIDs based on input patterID sequences
      */
-    const std::unordered_set<ColID_t>& execute(intfInputIterator* _inputGenerator,
+    const Prediction_t& execute(intfInputIterator* _inputGenerator,
                                                int32_t _ticks = -1,
                                                enuLearningLevel _learningLevel = LearningFull);
     /**
@@ -153,5 +168,5 @@ public:
 protected:
     clsASMPrivate* pPrivate;
 };
-
+}
 #endif // CLSASM_H

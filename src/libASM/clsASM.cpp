@@ -20,7 +20,7 @@
  @author S.Mohammad M. Ziabary <mehran.m@aut.ac.ir>
  */
 
-#include <exception>
+#include <stdexcept>
 #include <iostream>
 #include <fstream>
 #include <climits>
@@ -30,6 +30,7 @@
 
 const char* FILE_SEGMENT_SEPARATOR = "**********";
 
+namespace AdaptiveSequenceMemorizer{
 /*************************************************************************************************************/
 clsASM::clsASM(Configs _configs):
     pPrivate(new clsASMPrivate(_configs))
@@ -37,33 +38,33 @@ clsASM::clsASM(Configs _configs):
 }
 
 /*************************************************************************************************************/
-const std::unordered_set<ColID_t>& clsASM::executeOnce(ColID_t _input,
-                                                       enuLearningLevel _learningLevel)
+const clsASM::Prediction_t& clsASM::executeOnce(ColID_t _input,
+                                                enuLearningLevel _learningLevel)
 {
     this->pPrivate->executeOnce(_input, _learningLevel);
     return this->pPrivate->predictedCols();
 }
 
 /*************************************************************************************************************/
-const std::unordered_set<ColID_t> &clsASM::execute(intfInputIterator *_inputGenerator,
-                                                   int32_t _ticks,
-                                                   enuLearningLevel _learningLevel)
+const clsASM::Prediction_t &clsASM::execute(intfInputIterator *_inputGenerator,
+                                            int32_t _ticks,
+                                            enuLearningLevel _learningLevel)
 {
     ColID_t ColID;
-    std::unordered_set<ColID_t>& PredictedCols = (std::unordered_set<ColID_t>&)this->executeOnce(0);
+    Prediction_t& Predictions = (Prediction_t&)this->executeOnce(0);
 
     if (_ticks > 0)
         _ticks--;
     while((ColID = _inputGenerator->next()) != NOT_ASSIGNED)
     {
-        PredictedCols = (std::unordered_set<ColID_t>&)this->executeOnce(ColID,_learningLevel);
+        Predictions = (Prediction_t&)this->executeOnce(ColID,_learningLevel);
 
         if(_ticks == 0)
             break;
         else if (_ticks > 0)
             _ticks--;
     }
-    return PredictedCols;
+    return Predictions;
 }
 
 /*************************************************************************************************************/
@@ -92,6 +93,8 @@ clsASMPrivate::clsASMPrivate(clsASM::Configs _configs)
 {
     this->LastLearningCell.clear();
     this->Configs = _configs;
+    this->PathItems = 0;
+    this->SumPathPermanence = 0;
 }
 
 /*************************************************************************************************************/
@@ -129,8 +132,12 @@ void clsASMPrivate::executeOnce(ColID_t _activeColIndex, clsASM::enuLearningLeve
         this->PredictedCells.clear();
         this->FirstPattern = true;
         this->LastActiveColumn = _activeColIndex;
+        this->PathItems = 0;
+        this->SumPathPermanence = 0;
         return;
     }
+
+    this->PathItems++;
 
     //if input column has not yet been seen do nothing as nothing
     //related has been learnt
@@ -191,6 +198,7 @@ void clsASMPrivate::executeOnce(ColID_t _activeColIndex, clsASM::enuLearningLeve
     else
     {
         this->LastLearningCell = PredictiveCell->loc();
+        this->SumPathPermanence += PredictiveCell->connection().Permanence;
 
         if (_learningLevel != clsASM::LearningFrozen)
         {
@@ -209,10 +217,10 @@ void clsASMPrivate::executeOnce(ColID_t _activeColIndex, clsASM::enuLearningLeve
                             PredictiveCell->connection().Permanence < this->Configs.PermanenceDecVal ?
                                 0 :
                                 PredictiveCell->connection().Permanence - this->Configs.PermanenceDecVal
-                            );
+                                );
                 if (this->cell(*CellIter)->connection().Permanence == 0)
                     this->removeCell(*CellIter);
-             }
+            }
         }
         this->removeOldPredictions();
         this->setPredictionState(this->cell(this->LastLearningCell));
@@ -404,9 +412,9 @@ void clsASMPrivate::award(ColID_t _colID, Permanence_t _pVal)
         CellIter ++)
         if (CellIter->ColID == _colID){
             this->cell(*CellIter)->connection().Permanence = (
-                    SHRT_MAX - this->cell(*CellIter)->connection().Permanence < _pVal ?
-                        SHRT_MAX :
-                        this->cell(*CellIter)->connection().Permanence + _pVal);
+                        SHRT_MAX - this->cell(*CellIter)->connection().Permanence < _pVal ?
+                            SHRT_MAX :
+                            this->cell(*CellIter)->connection().Permanence + _pVal);
             break;
         }
 }
@@ -424,10 +432,10 @@ void clsASMPrivate::punish(ColID_t _colID, Permanence_t _pVal)
                     this->cell(*CellIter)->connection().Permanence < _pVal ?
                         0 :
                         this->cell(*CellIter)->connection().Permanence - _pVal
-                    );
+                        );
         if (this->cell(*CellIter)->connection().Permanence == 0)
             this->removeCell(*CellIter);
-     }
+    }
 }
 
 /*************************************************************************************************************/
@@ -441,11 +449,15 @@ void clsASMPrivate::setPredictionState(clsCell* _activeCell)
                 CellIter != (*ColIter)->end();
                 CellIter++)
                 if (*CellIter && this->cell((*CellIter)->loc())->connection().Destination == _activeCell->loc() &&
-                    this->cell((*CellIter)->loc())->connection().Permanence >= this->Configs.MinPermanence2Connect)
+                        this->cell((*CellIter)->loc())->connection().Permanence >= this->Configs.MinPermanence2Connect)
                 {
                     this->cell((*CellIter)->loc())->setWasPredictingState(true);
                     this->PredictedCells.push_back((*CellIter)->loc());
-                    this->PredictedCols.insert((*CellIter)->loc().ColID);
+                    this->PredictedCols.push_back(clsASM::stuPrediction(
+                                                   (*CellIter)->loc().ColID,
+                                                   (this->SumPathPermanence +
+                                                    this->cell((*CellIter)->loc())->connection().Permanence) /
+                                                      this->PathItems));
                 }
 }
 
@@ -463,7 +475,7 @@ void clsASMPrivate::removeOldPredictions()
 void clsASMPrivate::removeCell(clsCell::stuLocation &_loc)
 {
     ///@TODO implement me
-/*    for (auto ColIter = this->Columns.begin();
+    /*    for (auto ColIter = this->Columns.begin();
          ColIter != this->Columns.end();
          ColIter++)
         if (*ColIter)
@@ -474,4 +486,5 @@ void clsASMPrivate::removeCell(clsCell::stuLocation &_loc)
                     this->removeCell(_loc);
 
     delete this->column(_loc.ColID)->at(_loc.ZIndex);*/
+}
 }
